@@ -18,6 +18,16 @@ class DeviceType(str, Enum):
     CPU = "cpu"
     CUDA = "cuda"
 
+    def resolve(self) -> str:
+        """Resolve the actual device string for ML frameworks."""
+        if self == DeviceType.AUTO:
+            # Lazy import: torch is only loaded when actually running inference,
+            # keeping the CLI lightweight for help/validation commands.
+            import torch
+
+            return "cuda" if torch.cuda.is_available() else "cpu"
+        return self.value
+
 
 class WhisperModel(str, Enum):
     """Available Whisper model sizes."""

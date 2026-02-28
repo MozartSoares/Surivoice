@@ -28,6 +28,9 @@ class FFmpegError(SurivoiceError):
 class TranscriptionError(SurivoiceError):
     """Whisper model load or inference failure."""
 
+    MODEL_LOAD_FAILED = "Failed to load Whisper model"
+    TRANSCRIPTION_FAILED = "Transcription failed"
+
 
 class DiarizationError(SurivoiceError):
     """Pyannote model load or inference failure."""
