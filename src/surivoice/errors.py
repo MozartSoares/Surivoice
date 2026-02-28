@@ -35,6 +35,10 @@ class TranscriptionError(SurivoiceError):
 class DiarizationError(SurivoiceError):
     """Pyannote model load or inference failure."""
 
+    PIPELINE_LOAD_FAILED = "Failed to load diarization pipeline"
+    DIARIZATION_FAILED = "Diarization failed"
+    MISSING_HF_TOKEN = "Hugging Face token is required for diarization"
+
 
 class MergeError(SurivoiceError):
     """Segment alignment failure, e.g. empty inputs."""
