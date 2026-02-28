@@ -17,10 +17,13 @@ from surivoice.transcription.transcriber import TranscribeResult, transcribe
 
 
 def _make_fake_segment(
-    start: float, end: float, text: str
+    words: list[tuple[float, float, str]],
 ) -> SimpleNamespace:
-    """Create a fake faster-whisper Segment object."""
-    return SimpleNamespace(start=start, end=end, text=text)
+    """Create a fake faster-whisper Segment object with words."""
+    word_objs = [
+        SimpleNamespace(start=w_start, end=w_end, word=text) for w_start, w_end, text in words
+    ]
+    return SimpleNamespace(words=word_objs)
 
 
 def _make_fake_info(
@@ -57,8 +60,8 @@ class TestTranscribe:
         wav_file.touch()
 
         fake_segments = [
-            _make_fake_segment(0.0, 1.5, "Hello world"),
-            _make_fake_segment(1.5, 3.0, "How are you"),
+            _make_fake_segment([(0.0, 1.5, "Hello world")]),
+            _make_fake_segment([(1.5, 3.0, "How are you")]),
         ]
         mock_fw = _build_mock_faster_whisper(fake_segments, _make_fake_info())
         config = PipelineConfig(device=DeviceType.CPU)
@@ -75,8 +78,8 @@ class TestTranscribe:
         wav_file.touch()
 
         fake_segments = [
-            _make_fake_segment(0.0, 2.0, " Hello "),
-            _make_fake_segment(2.0, 4.5, " World "),
+            _make_fake_segment([(0.0, 2.0, " Hello ")]),
+            _make_fake_segment([(2.0, 4.5, " World ")]),
         ]
         mock_fw = _build_mock_faster_whisper(fake_segments, _make_fake_info())
         config = PipelineConfig(device=DeviceType.CPU)

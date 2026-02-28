@@ -52,7 +52,7 @@ class ComputeType(str, Enum):
 class PipelineConfig(BaseModel, frozen=True):
     """Immutable configuration for a single pipeline run."""
 
-    model: WhisperModel = WhisperModel.MEDIUM
+    model: WhisperModel = WhisperModel.LARGE_V3
     """Whisper model size to use for transcription."""
 
     device: DeviceType = DeviceType.AUTO
@@ -67,11 +67,8 @@ class PipelineConfig(BaseModel, frozen=True):
     hf_token: str | None = None
     """Hugging Face access token for pyannote.audio models."""
 
-    min_speakers: int | None = Field(default=None, ge=1)
-    """Minimum number of speakers (hint for diarization)."""
-
-    max_speakers: int | None = Field(default=None, ge=1)
-    """Maximum number of speakers (hint for diarization)."""
+    num_speakers: int | None = Field(default=None, ge=1)
+    """Exact number of speakers (hint for diarization)."""
 
     output_format: Literal["markdown"] = "markdown"
     """Output format. Only 'markdown' in MVP; extensible later."""

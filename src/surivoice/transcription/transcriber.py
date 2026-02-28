@@ -74,9 +74,7 @@ def transcribe(wav_path: Path, config: PipelineConfig) -> TranscribeResult:
             compute_type=compute_type,
         )
     except Exception as exc:
-        raise TranscriptionError(
-            f"{TranscriptionError.MODEL_LOAD_FAILED}: {exc}"
-        ) from exc
+        raise TranscriptionError(f"{TranscriptionError.MODEL_LOAD_FAILED}: {exc}") from exc
 
     language = config.language
 
@@ -85,21 +83,32 @@ def transcribe(wav_path: Path, config: PipelineConfig) -> TranscribeResult:
     try:
         segments_generator, info = model.transcribe(
             str(wav_path),
+            vad_filter=True,  # turns on silero VAD (Voice Activity Detection)
+            # 0.5s of silence to trigger a new segment
+            vad_parameters=dict(min_silence_duration_ms=500),
             language=language,
+            word_timestamps=True,
         )
 
-        segments = tuple(
-            TranscriptionSegment(
-                start=segment.start,
-                end=segment.end,
-                text=segment.text.strip(),
-            )
-            for segment in segments_generator
-        )
+        segments_list = []
+        for segment in segments_generator:
+            if not segment.words:
+                continue
+            for word in segment.words:
+                stripped_word = word.word.strip()
+                if not stripped_word:
+                    continue
+                segments_list.append(
+                    TranscriptionSegment(
+                        start=word.start,
+                        end=word.end,
+                        text=stripped_word,
+                    )
+                )
+
+        segments = tuple(segments_list)
     except Exception as exc:
-        raise TranscriptionError(
-            f"{TranscriptionError.TRANSCRIPTION_FAILED}: {exc}"
-        ) from exc
+        raise TranscriptionError(f"{TranscriptionError.TRANSCRIPTION_FAILED}: {exc}") from exc
 
     logger.info(
         "Transcription complete: %d segments, language=%s (%.1f%%), duration=%.1fs",

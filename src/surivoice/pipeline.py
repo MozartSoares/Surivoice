@@ -67,13 +67,17 @@ def run(
             diarize_result.segments,
         )
 
+    # Build final result first to get the true speaker count
+    unique_speakers = {seg.speaker for seg in merged}
+    true_speakers_count = len(unique_speakers)
+
     # Stage 5: Format
     logger.info("Stage 5/6: Formatting transcript")
     content = format_transcript(
         segments=merged,
         detected_language=transcribe_result.detected_language,
         duration_seconds=transcribe_result.duration_seconds,
-        speakers_count=diarize_result.speakers_count,
+        speakers_count=true_speakers_count,
     )
 
     # Stage 6: Write
@@ -81,12 +85,11 @@ def run(
     write_transcript(content, output_path)
 
     # Build final result
-    unique_speakers = {seg.speaker for seg in merged}
     result = TranscriptionResult(
         segments=merged,
         detected_language=transcribe_result.detected_language,
         duration_seconds=transcribe_result.duration_seconds,
-        speakers_count=len(unique_speakers),
+        speakers_count=true_speakers_count,
     )
 
     logger.info("Pipeline complete: %s", output_path)

@@ -113,8 +113,6 @@ def write_transcript(
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(content, encoding="utf-8")
     except OSError as exc:
-        raise OutputError(
-            f"{OutputError.WRITE_FAILED}: {output_path}\n{exc}"
-        ) from exc
+        raise OutputError(f"{OutputError.WRITE_FAILED}: {output_path}\n{exc}") from exc
 
     logger.info("Transcript written to %s", output_path)

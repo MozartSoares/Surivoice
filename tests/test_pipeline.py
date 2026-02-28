@@ -32,8 +32,8 @@ def _build_pipeline_mocks(
     """
     if transcription_segments is None:
         transcription_segments = (
-            TranscriptionSegment(start=0.0, end=2.0, text="Hello"),
-            TranscriptionSegment(start=2.0, end=4.0, text="World"),
+            TranscriptionSegment(start=0.0, end=0.8, text="Hello"),
+            TranscriptionSegment(start=0.9, end=2.0, text="World"),
         )
 
     if diarization_segments is None:
@@ -122,10 +122,13 @@ class TestPipelineRun:
 
         config = PipelineConfig(device=DeviceType.CPU, hf_token="fake")
 
-        with patch(
-            "surivoice.pipeline.extract_audio",
-            side_effect=FFmpegError("extraction failed"),
-        ), pytest.raises(FFmpegError):
+        with (
+            patch(
+                "surivoice.pipeline.extract_audio",
+                side_effect=FFmpegError("extraction failed"),
+            ),
+            pytest.raises(FFmpegError),
+        ):
             run(input_file, output_file, config)
 
     def test_run_merges_segments_correctly(self, tmp_path: Path) -> None:
@@ -134,9 +137,7 @@ class TestPipelineRun:
         input_file.touch()
         output_file = tmp_path / "output.md"
 
-        t_segments = (
-            TranscriptionSegment(start=0.0, end=3.0, text="Both speakers overlap"),
-        )
+        t_segments = (TranscriptionSegment(start=0.0, end=3.0, text="Both speakers overlap"),)
         d_segments = (
             DiarizationSegment(start=0.0, end=1.0, speaker="SPEAKER_00"),
             DiarizationSegment(start=1.0, end=3.0, speaker="SPEAKER_01"),

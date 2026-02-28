@@ -41,12 +41,13 @@ class TestMergeSegments:
         assert result[0] == MergedSegment(start=0.0, end=2.0, speaker="SPEAKER_00", text="Hello")
         assert result[1] == MergedSegment(start=2.0, end=4.0, speaker="SPEAKER_01", text="World")
 
-    def test_max_overlap_picks_best_speaker(self) -> None:
-        """Transcription segment overlapping two speakers picks the one with more overlap."""
+    def test_midpoint_picks_best_speaker(self) -> None:
+        """Transcription segment intersecting a speaker at its midpoint gets that speaker."""
+        # Midpoint of (1.0..4.0) is 2.5
         transcription = (_t(1.0, 4.0, "Overlapping speech"),)
         diarization = (
-            _d(0.0, 2.0, "SPEAKER_00"),  # overlap: 1.0s (1.0..2.0)
-            _d(2.0, 5.0, "SPEAKER_01"),  # overlap: 2.0s (2.0..4.0)
+            _d(0.0, 2.0, "SPEAKER_00"),  # Does not cover 2.5
+            _d(2.0, 5.0, "SPEAKER_01"),  # Covers 2.5
         )
 
         result = merge_segments(transcription, diarization)
@@ -60,9 +61,7 @@ class TestMergeSegments:
             _t(1.0, 2.0, "there"),
             _t(2.0, 3.0, "friend"),
         )
-        diarization = (
-            _d(0.0, 3.0, "SPEAKER_00"),
-        )
+        diarization = (_d(0.0, 3.0, "SPEAKER_00"),)
 
         result = merge_segments(transcription, diarization)
 
@@ -91,11 +90,27 @@ class TestMergeSegments:
         assert result[1].speaker == "SPEAKER_01"
         assert result[2].speaker == "SPEAKER_00"
 
-    def test_no_overlap_assigns_unknown(self) -> None:
-        """Transcription with no diarization overlap gets UNKNOWN_SPEAKER."""
-        transcription = (_t(10.0, 12.0, "Isolated"),)
+    def test_nearest_neighbor_fallback(self) -> None:
+        """Transcription with no strict midpoint overlap falls back to the nearest track."""
+        # Midpoint is 2.5 (falls into the dead zone between 2.0 and 3.0)
+        transcription = (_t(2.4, 2.6, "Gap word"),)
         diarization = (
-            _d(0.0, 2.0, "SPEAKER_00"),
+            _d(0.0, 2.0, "SPEAKER_00"),  # Center: 1.0 (Distance: 1.5)
+            _d(3.0, 5.0, "SPEAKER_01"),  # Center: 4.0 (Distance: 1.5)
+            _d(2.7, 2.8, "SPEAKER_02"),  # Center: 2.75 (Distance: 0.25 -> Winner)
+        )
+
+        result = merge_segments(transcription, diarization)
+
+        # Should fall back to SPEAKER_02 because its center is closest to 2.5
+        assert result[0].speaker == "SPEAKER_02"
+
+    def test_no_overlap_assigns_unknown_beyond_threshold(self) -> None:
+        """Transcription beyond MAX_FALLBACK_GAP gets UNKNOWN_SPEAKER."""
+        # Midpoint 12.0
+        transcription = (_t(11.0, 13.0, "Isolated"),)
+        diarization = (
+            _d(0.0, 2.0, "SPEAKER_00"),  # Center 1.0, Distance 11.0 > MAX_FALLBACK_GAP
         )
 
         result = merge_segments(transcription, diarization)
@@ -122,9 +137,7 @@ class TestMergeSegments:
             _t(0.5, 1.5, "Part one"),
             _t(1.5, 3.0, "Part two"),
         )
-        diarization = (
-            _d(0.0, 4.0, "SPEAKER_00"),
-        )
+        diarization = (_d(0.0, 4.0, "SPEAKER_00"),)
 
         result = merge_segments(transcription, diarization)
 

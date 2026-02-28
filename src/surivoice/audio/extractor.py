@@ -57,11 +57,15 @@ def extract_audio(input_path: Path, output_dir: Path) -> Path:
 
     cmd = [
         ffmpeg_path,
-        "-i", str(input_path),
+        "-i",
+        str(input_path),
         "-vn",
-        "-acodec", AUDIO_CODEC,
-        "-ar", str(SAMPLE_RATE),
-        "-ac", str(CHANNELS),
+        "-acodec",
+        AUDIO_CODEC,
+        "-ar",
+        str(SAMPLE_RATE),
+        "-ac",
+        str(CHANNELS),
         "-y",
         str(output_path),
     ]
@@ -77,14 +81,10 @@ def extract_audio(input_path: Path, output_dir: Path) -> Path:
     if result.returncode != 0:
         stderr_snippet = result.stderr.strip().splitlines()[-3:] if result.stderr else []
         detail = "\n".join(stderr_snippet)
-        raise FFmpegError(
-            f"{FFmpegError.EXTRACTION_FAILED}: {input_path}\n{detail}"
-        )
+        raise FFmpegError(f"{FFmpegError.EXTRACTION_FAILED}: {input_path}\n{detail}")
 
     if not output_path.exists():
-        raise FFmpegError(
-            f"{FFmpegError.EXTRACTION_FAILED}: output file was not created"
-        )
+        raise FFmpegError(f"{FFmpegError.EXTRACTION_FAILED}: output file was not created")
 
     logger.info("Extracted audio to %s", output_path)
     return output_path

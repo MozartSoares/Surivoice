@@ -36,6 +36,17 @@ pip install -e ".[dev,ml]"
 
 ## Usage
 
+### Authentication
+
+To use pyannote.audio for speaker diarization, you need to provide a Hugging Face access token:
+
+```bash
+surivoice save-token YOUR_HF_TOKEN
+```
+Or you can use the `--hf-token` flag when transcribing, or export the `HF_TOKEN` environment variable.
+
+### Transcription
+
 ```bash
 surivoice transcribe -i meeting.mp4 -o transcript.md
 ```
@@ -48,11 +59,11 @@ surivoice transcribe -i meeting.mp4 -o transcript.md
 | `-o, --output` | Output Markdown file | *required* |
 | `-m, --model` | Whisper model size | `medium` |
 | `-d, --device` | Compute device (`auto`, `cpu`, `cuda`) | `auto` |
+| `--compute-type` | Quantization algorithm | `int8` |
 | `-l, --language` | Language code (auto-detect if omitted) | `None` |
 | `--hf-token` | Hugging Face access token (or set `HF_TOKEN` env var) | `None` |
-| `--min-speakers` | Minimum speaker count hint | `None` |
-| `--max-speakers` | Maximum speaker count hint | `None` |
-| `-v, --version` | Show version and exit | |
+| `-s, --speakers` | Exact speaker count hint | `None` |
+| `-v, --version` | Show version and exit | 
 
 ## Supported Formats
 

@@ -15,6 +15,9 @@ from surivoice import __version__
 from surivoice.config import ComputeType, DeviceType, PipelineConfig, WhisperModel
 from surivoice.errors import FFmpegError, InputFileError, SurivoiceError
 
+TOKEN_DIR = Path.home() / ".config" / "surivoice"
+TOKEN_FILE = TOKEN_DIR / "token"
+
 console = Console(stderr=True)
 
 app = typer.Typer(
@@ -39,11 +42,24 @@ def print_warning(msg: str) -> None:
     """Print a formatted warning message."""
     console.print(f"[yellow]{msg}[/]")
 
+
 # Supported input extensions (common audio/video formats)
-SUPPORTED_EXTENSIONS: frozenset[str] = frozenset({
-    ".mp4", ".mkv", ".avi", ".mov", ".webm",  # video
-    ".mp3", ".wav", ".flac", ".ogg", ".m4a", ".aac", ".wma",  # audio
-})
+SUPPORTED_EXTENSIONS: frozenset[str] = frozenset(
+    {
+        ".mp4",
+        ".mkv",
+        ".avi",
+        ".mov",
+        ".webm",  # video
+        ".mp3",
+        ".wav",
+        ".flac",
+        ".ogg",
+        ".m4a",
+        ".aac",
+        ".wma",  # audio
+    }
+)
 
 
 def version_callback(value: bool) -> None:
@@ -51,6 +67,20 @@ def version_callback(value: bool) -> None:
     if value:
         console.print(f"surivoice {__version__}")
         raise typer.Exit()
+
+
+@app.callback(invoke_without_command=True)
+def main(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-v",
+        help="Show version and exit.",
+        callback=version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """Local-first speech transcription with speaker diarization."""
 
 
 def _validate_input_file(path: Path) -> Path:
@@ -86,6 +116,52 @@ def _check_ffmpeg() -> None:
         raise typer.Exit(code=2)
 
 
+def _load_saved_token() -> str | None:
+    """Read a saved HF token from ~/.config/surivoice/token."""
+    if TOKEN_FILE.is_file():
+        content = TOKEN_FILE.read_text(encoding="utf-8").strip()
+        if content:
+            return content
+    return None
+
+
+def _resolve_hf_token(cli_token: str | None) -> str:
+    """Resolve the HF token from CLI flag, env var, or saved file.
+
+    Resolution order:
+        1. --hf-token flag (already includes HF_TOKEN env via Typer)
+        2. Saved token file (~/.config/surivoice/token)
+
+    Raises typer.Exit if no token is found.
+    """
+    if cli_token:
+        return cli_token
+
+    saved = _load_saved_token()
+    if saved:
+        return saved
+
+    print_error(
+        "Hugging Face token is required for speaker diarization.\n"
+        "Provide it via one of:\n"
+        "  1. surivoice save-token YOUR_TOKEN  (saves permanently)\n"
+        "  2. --hf-token YOUR_TOKEN             (per-run)\n"
+        "  3. export HF_TOKEN=YOUR_TOKEN        (env var)"
+    )
+    raise typer.Exit(code=1)
+
+
+@app.command(name="save-token")
+def save_token(
+    token: str = typer.Argument(..., help="Hugging Face access token to save."),
+) -> None:
+    """Save your Hugging Face token locally for future runs."""
+    TOKEN_DIR.mkdir(parents=True, exist_ok=True)
+    TOKEN_FILE.write_text(token.strip(), encoding="utf-8")
+    TOKEN_FILE.chmod(0o600)  # read/write for owner only
+    print_success(f"Token saved to {TOKEN_FILE}")
+
+
 @app.command()
 def transcribe(
     input_file: Path = typer.Option(
@@ -102,7 +178,7 @@ def transcribe(
         help="Output Markdown file path.",
     ),
     model: WhisperModel = typer.Option(
-        WhisperModel.MEDIUM,
+        WhisperModel.LARGE_V3,
         "--model",
         "-m",
         help="Whisper model size.",
@@ -130,31 +206,19 @@ def transcribe(
         envvar="HF_TOKEN",
         help="Hugging Face access token for pyannote.audio models.",
     ),
-    min_speakers: int | None = typer.Option(
+    num_speakers: int | None = typer.Option(
         None,
-        "--min-speakers",
-        help="Minimum number of speakers (hint for diarization).",
+        "--speakers",
+        "-s",
+        help="Exact number of speakers (optional).",
         min=1,
-    ),
-    max_speakers: int | None = typer.Option(
-        None,
-        "--max-speakers",
-        help="Maximum number of speakers (hint for diarization).",
-        min=1,
-    ),
-    version: bool = typer.Option(
-        False,
-        "--version",
-        "-v",
-        help="Show version and exit.",
-        callback=version_callback,
-        is_eager=True,
     ),
 ) -> None:
     """Transcribe an audio/video file with speaker diarization."""
-    # Validate prerequisites
+    # Validate prerequisites (fail-fast)
     _validate_input_file(input_file)
     _check_ffmpeg()
+    resolved_token = _resolve_hf_token(hf_token)
 
     # Build pipeline configuration
     config = PipelineConfig(
@@ -162,9 +226,8 @@ def transcribe(
         device=device,
         compute_type=compute_type,
         language=language,
-        hf_token=hf_token,
-        min_speakers=min_speakers,
-        max_speakers=max_speakers,
+        hf_token=resolved_token,
+        num_speakers=num_speakers,
     )
 
     print_success(f"Surivoice v{__version__}")

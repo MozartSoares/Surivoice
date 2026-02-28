@@ -44,9 +44,7 @@ class TestExtractAudio:
             assert wf.getsampwidth() == 2  # 16-bit PCM
 
     @requires_ffmpeg
-    def test_extraction_creates_file_in_output_dir(
-        self, wav_fixture: Path, tmp_path: Path
-    ) -> None:
+    def test_extraction_creates_file_in_output_dir(self, wav_fixture: Path, tmp_path: Path) -> None:
         """Output WAV must land inside the specified output directory."""
         output_dir = tmp_path / "custom_output"
         output_dir.mkdir()
@@ -77,9 +75,7 @@ class TestExtractAudio:
         with pytest.raises(FFmpegError, match=FFmpegError.EXTRACTION_FAILED):
             extract_audio(corrupt_file, output_dir)
 
-    def test_extraction_raises_on_missing_ffmpeg(
-        self, wav_fixture: Path, tmp_path: Path
-    ) -> None:
+    def test_extraction_raises_on_missing_ffmpeg(self, wav_fixture: Path, tmp_path: Path) -> None:
         """Missing FFmpeg should raise FFmpegError with NOT_INSTALLED."""
         output_dir = tmp_path / "output"
         output_dir.mkdir()
@@ -89,4 +85,3 @@ class TestExtractAudio:
             pytest.raises(FFmpegError, match=FFmpegError.NOT_INSTALLED),
         ):
             extract_audio(wav_fixture, output_dir)
-

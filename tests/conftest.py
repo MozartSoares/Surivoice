@@ -45,4 +45,3 @@ def wav_fixture(tmp_path: Path) -> Path:
         wf.writeframes(struct.pack(f"<{n_frames}h", *([0] * n_frames)))
 
     return filepath
-

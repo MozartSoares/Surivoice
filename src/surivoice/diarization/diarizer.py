@@ -68,31 +68,38 @@ def diarize(wav_path: Path, config: PipelineConfig) -> DiarizeResult:
     )
 
     try:
+        import torch
+
+        torch_device = torch.device(device)
+
         pipeline = Pipeline.from_pretrained(
             PIPELINE_MODEL,
-            use_auth_token=config.hf_token,
+            token=config.hf_token,
         )
-        pipeline.to(device)
+        if pipeline is None:
+            raise RuntimeError("Pipeline.from_pretrained returned None")
+
+        pipeline.to(torch_device)
     except Exception as exc:
-        raise DiarizationError(
-            f"{DiarizationError.PIPELINE_LOAD_FAILED}: {exc}"
-        ) from exc
+        raise DiarizationError(f"{DiarizationError.PIPELINE_LOAD_FAILED}: {exc}") from exc
 
     logger.info("Diarizing %s", wav_path)
 
     # Build kwargs for speaker count hints
     pipeline_kwargs: dict[str, int] = {}
-    if config.min_speakers is not None:
-        pipeline_kwargs["min_speakers"] = config.min_speakers
-    if config.max_speakers is not None:
-        pipeline_kwargs["max_speakers"] = config.max_speakers
+    if config.num_speakers is not None:
+        pipeline_kwargs["num_speakers"] = config.num_speakers
 
     try:
-        annotation = pipeline(str(wav_path), **pipeline_kwargs)
+        pipeline_output = pipeline(str(wav_path), **pipeline_kwargs)  # type: ignore[arg-type]
     except Exception as exc:
-        raise DiarizationError(
-            f"{DiarizationError.DIARIZATION_FAILED}: {exc}"
-        ) from exc
+        raise DiarizationError(f"{DiarizationError.DIARIZATION_FAILED}: {exc}") from exc
+
+    # Pyannote 3.1 returns DiarizeOutput which wraps Annotation inside .speaker_diarization
+    if hasattr(pipeline_output, "speaker_diarization"):
+        annotation = pipeline_output.speaker_diarization
+    else:
+        annotation = pipeline_output
 
     segments = tuple(
         DiarizationSegment(

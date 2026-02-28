@@ -32,12 +32,13 @@ def _build_mock_pyannote(
     mock_module = MagicMock()
 
     mock_annotation = MagicMock()
-    mock_annotation.itertracks.return_value = [
-        (turn, None, speaker) for turn, speaker in tracks
-    ]
+    mock_annotation.itertracks.return_value = [(turn, None, speaker) for turn, speaker in tracks]
+
+    mock_pipeline_output = MagicMock()
+    mock_pipeline_output.speaker_diarization = mock_annotation
 
     mock_pipeline_instance = MagicMock()
-    mock_pipeline_instance.return_value = mock_annotation
+    mock_pipeline_instance.return_value = mock_pipeline_output
     mock_pipeline_instance.to = MagicMock()
 
     mock_module.Pipeline.from_pretrained.return_value = mock_pipeline_instance
@@ -60,7 +61,14 @@ class TestDiarize:
         mock_pa = _build_mock_pyannote(tracks)
         config = PipelineConfig(device=DeviceType.CPU, hf_token="fake-token")
 
-        with patch.dict(sys.modules, {"pyannote.audio": mock_pa, "pyannote": MagicMock()}):
+        with patch.dict(
+            sys.modules,
+            {
+                "pyannote.audio": mock_pa,
+                "pyannote": MagicMock(),
+                "torch": MagicMock(),
+            },
+        ):
             result = diarize(wav_file, config)
 
         assert isinstance(result, DiarizeResult)
@@ -78,7 +86,14 @@ class TestDiarize:
         mock_pa = _build_mock_pyannote(tracks)
         config = PipelineConfig(device=DeviceType.CPU, hf_token="fake-token")
 
-        with patch.dict(sys.modules, {"pyannote.audio": mock_pa, "pyannote": MagicMock()}):
+        with patch.dict(
+            sys.modules,
+            {
+                "pyannote.audio": mock_pa,
+                "pyannote": MagicMock(),
+                "torch": MagicMock(),
+            },
+        ):
             result = diarize(wav_file, config)
 
         assert result.segments[0] == DiarizationSegment(start=0.5, end=1.5, speaker="SPEAKER_00")
@@ -98,13 +113,20 @@ class TestDiarize:
         mock_pa = _build_mock_pyannote(tracks)
         config = PipelineConfig(device=DeviceType.CPU, hf_token="fake-token")
 
-        with patch.dict(sys.modules, {"pyannote.audio": mock_pa, "pyannote": MagicMock()}):
+        with patch.dict(
+            sys.modules,
+            {
+                "pyannote.audio": mock_pa,
+                "pyannote": MagicMock(),
+                "torch": MagicMock(),
+            },
+        ):
             result = diarize(wav_file, config)
 
         assert result.speakers_count == 3
 
     def test_diarize_passes_speaker_hints(self, tmp_path: Path) -> None:
-        """min_speakers and max_speakers should be forwarded to the pipeline call."""
+        """num_speakers should be forwarded to the pipeline call."""
         wav_file = tmp_path / "audio.wav"
         wav_file.touch()
 
@@ -112,19 +134,24 @@ class TestDiarize:
         config = PipelineConfig(
             device=DeviceType.CPU,
             hf_token="fake-token",
-            min_speakers=2,
-            max_speakers=5,
+            num_speakers=3,
         )
 
-        with patch.dict(sys.modules, {"pyannote.audio": mock_pa, "pyannote": MagicMock()}):
+        with patch.dict(
+            sys.modules,
+            {
+                "pyannote.audio": mock_pa,
+                "pyannote": MagicMock(),
+                "torch": MagicMock(),
+            },
+        ):
             diarize(wav_file, config)
 
         # The pipeline instance is called with the wav path + speaker hints
         pipeline_instance = mock_pa.Pipeline.from_pretrained.return_value
         pipeline_instance.assert_called_once_with(
             str(wav_file),
-            min_speakers=2,
-            max_speakers=5,
+            num_speakers=3,
         )
 
     def test_diarize_raises_on_pipeline_load_failure(self, tmp_path: Path) -> None:
@@ -137,7 +164,14 @@ class TestDiarize:
         config = PipelineConfig(device=DeviceType.CPU, hf_token="bad-token")
 
         with (
-            patch.dict(sys.modules, {"pyannote.audio": mock_pa, "pyannote": MagicMock()}),
+            patch.dict(
+                sys.modules,
+                {
+                    "pyannote.audio": mock_pa,
+                    "pyannote": MagicMock(),
+                    "torch": MagicMock(),
+                },
+            ),
             pytest.raises(DiarizationError, match=DiarizationError.PIPELINE_LOAD_FAILED),
         ):
             diarize(wav_file, config)
