@@ -25,8 +25,9 @@ class DeviceType(str, Enum):
             # keeping the CLI lightweight for help/validation commands.
             import torch
 
-            return "cuda" if torch.cuda.is_available() else "cpu"
-        return self.value
+            has_cuda: bool = bool(torch.cuda.is_available())
+            return "cuda" if has_cuda else "cpu"
+        return str(self.value)
 
 
 class WhisperModel(str, Enum):

@@ -75,8 +75,7 @@ def format_transcript(
         unique_speakers = sorted({seg.speaker for seg in segments})
         metadata_items.append(f"- {LABEL_SPEAKERS}")
         for speaker in unique_speakers:
-          prefix =  "_0" if speaker < 10 else "_"
-          metadata_items.append(f"  - SPEAKER{prefix}{speaker}")
+            metadata_items.append(f"  - {speaker}")
         metadata_items.append(f"- {LABEL_TOTAL_SPEAKERS} {speakers_count}")
 
     if metadata_items:

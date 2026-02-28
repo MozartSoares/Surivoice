@@ -7,8 +7,6 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from surivoice.cli import app
-
 
 @pytest.fixture
 def cli_runner() -> CliRunner:

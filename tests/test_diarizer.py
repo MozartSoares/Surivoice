@@ -136,9 +136,11 @@ class TestDiarize:
         mock_pa.Pipeline.from_pretrained.side_effect = RuntimeError("auth failed")
         config = PipelineConfig(device=DeviceType.CPU, hf_token="bad-token")
 
-        with patch.dict(sys.modules, {"pyannote.audio": mock_pa, "pyannote": MagicMock()}):
-            with pytest.raises(DiarizationError, match=DiarizationError.PIPELINE_LOAD_FAILED):
-                diarize(wav_file, config)
+        with (
+            patch.dict(sys.modules, {"pyannote.audio": mock_pa, "pyannote": MagicMock()}),
+            pytest.raises(DiarizationError, match=DiarizationError.PIPELINE_LOAD_FAILED),
+        ):
+            diarize(wav_file, config)
 
     def test_diarize_raises_on_missing_hf_token(self, tmp_path: Path) -> None:
         """No HF token should raise DiarizationError with MISSING_HF_TOKEN."""

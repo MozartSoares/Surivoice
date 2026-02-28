@@ -76,7 +76,7 @@ class TestPipelineRun:
         config = PipelineConfig(device=DeviceType.CPU, hf_token="fake")
 
         with patch.multiple("surivoice.pipeline", **mocks):
-            result = run(input_file, output_file, config)
+            run(input_file, output_file, config)
 
         assert output_file.exists()
         content = output_file.read_text(encoding="utf-8")
@@ -125,9 +125,8 @@ class TestPipelineRun:
         with patch(
             "surivoice.pipeline.extract_audio",
             side_effect=FFmpegError("extraction failed"),
-        ):
-            with pytest.raises(FFmpegError):
-                run(input_file, output_file, config)
+        ), pytest.raises(FFmpegError):
+            run(input_file, output_file, config)
 
     def test_run_merges_segments_correctly(self, tmp_path: Path) -> None:
         """Pipeline should merge transcription with diarization segments."""

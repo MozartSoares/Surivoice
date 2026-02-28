@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from surivoice.config import ComputeType, DeviceType, PipelineConfig, WhisperModel
+from surivoice.config import DeviceType, PipelineConfig
 from surivoice.errors import TranscriptionError
 from surivoice.models import TranscriptionSegment
 from surivoice.transcription.transcriber import TranscribeResult, transcribe
@@ -125,9 +125,11 @@ class TestTranscribe:
         mock_fw.WhisperModel.side_effect = RuntimeError("out of memory")
         config = PipelineConfig(device=DeviceType.CPU)
 
-        with patch.dict(sys.modules, {"faster_whisper": mock_fw}):
-            with pytest.raises(TranscriptionError, match=TranscriptionError.MODEL_LOAD_FAILED):
-                transcribe(wav_file, config)
+        with (
+            patch.dict(sys.modules, {"faster_whisper": mock_fw}),
+            pytest.raises(TranscriptionError, match=TranscriptionError.MODEL_LOAD_FAILED),
+        ):
+            transcribe(wav_file, config)
 
 
 class TestDeviceResolve:

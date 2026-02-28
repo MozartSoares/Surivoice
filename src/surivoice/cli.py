@@ -6,7 +6,6 @@ invoking the pipeline orchestrator.
 """
 
 import shutil
-import sys
 from pathlib import Path
 
 import typer

@@ -84,7 +84,9 @@ class TestExtractAudio:
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
-        with patch("surivoice.audio.extractor.shutil.which", return_value=None):
-            with pytest.raises(FFmpegError, match=FFmpegError.NOT_INSTALLED):
-                extract_audio(wav_fixture, output_dir)
+        with (
+            patch("surivoice.audio.extractor.shutil.which", return_value=None),
+            pytest.raises(FFmpegError, match=FFmpegError.NOT_INSTALLED),
+        ):
+            extract_audio(wav_fixture, output_dir)
 

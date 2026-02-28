@@ -18,7 +18,7 @@ class TestCliHelp:
         """Running with no args should show help text (but exit 2 due to missing required opts)."""
         result = cli_runner.invoke(app, [])
         assert result.exit_code == 2
-        
+
         click_app = typer.main.get_command(app)
         assert click_app.name in result.output
 
@@ -35,7 +35,7 @@ class TestCliHelp:
         """--help should show command options dynamically."""
         result = cli_runner.invoke(app, ["--help"])
         assert result.exit_code == 0
-        
+
         # Extract all registered options dynamically
         click_app = typer.main.get_command(app)
         expected_options = [
@@ -43,7 +43,7 @@ class TestCliHelp:
             for opt in click_app.params
             if isinstance(opt, click.Option) and opt.opts
         ]
-        
+
         for option in expected_options:
             assert option in result.output, f"Expected option {option} missing in help"
 

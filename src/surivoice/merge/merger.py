@@ -4,9 +4,9 @@ Uses a maximum-overlap strategy to assign a speaker label to each
 transcription segment, then coalesces consecutive segments from the
 same speaker into a single MergedSegment.
 
-Algorithm complexity: O(T × D) where T = transcription segments,D = diarization segments.
-This can be improved by using a sweep-line algorithm, but for typical
-meetings (<2h) this is efficient enough.
+Algorithm complexity: O(T x D) where T = transcription segments, D = diarization segments.
+This can be improved by using a sweep-line algorithm O(T + D) since they are ordered
+chronologically, but for typical meetings (<2h) this is efficient enough.
 """
 
 import logging
