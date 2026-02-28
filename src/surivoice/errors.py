@@ -43,6 +43,9 @@ class DiarizationError(SurivoiceError):
 class MergeError(SurivoiceError):
     """Segment alignment failure, e.g. empty inputs."""
 
+    EMPTY_SEGMENTS = "No segments to merge"
+    NO_OVERLAP = "No speaker overlap found for segment"
+
 
 class OutputError(SurivoiceError):
     """Unable to write output file."""
