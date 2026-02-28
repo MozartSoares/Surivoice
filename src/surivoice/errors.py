@@ -49,3 +49,5 @@ class MergeError(SurivoiceError):
 
 class OutputError(SurivoiceError):
     """Unable to write output file."""
+
+    WRITE_FAILED = "Failed to write output file"
