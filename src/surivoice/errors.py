@@ -22,6 +22,7 @@ class FFmpegError(SurivoiceError):
     """FFmpeg not installed or audio extraction failed."""
 
     NOT_INSTALLED = "FFmpeg is not installed or not on PATH"
+    EXTRACTION_FAILED = "Audio extraction failed"
 
 
 class TranscriptionError(SurivoiceError):
