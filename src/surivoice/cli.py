@@ -175,5 +175,15 @@ def transcribe(
     console.print(f"  Device:  {config.device.value}")
     console.print()
 
-    # TODO: Invoke pipeline.run(input_file, output_file, config) in Step 7
-    print_warning("Pipeline not yet implemented. Coming in Step 2+.")
+    try:
+        from surivoice.pipeline import run
+
+        result = run(input_file, output_file, config)
+        print_success(
+            f"Done! {len(result.segments)} segments, "
+            f"{result.speakers_count} speakers, "
+            f"language={result.detected_language}"
+        )
+    except SurivoiceError as exc:
+        print_error(str(exc))
+        raise typer.Exit(code=1) from exc
