@@ -37,7 +37,7 @@ For GPU support, ensure you have CUDA-enabled PyTorch installed.
 ### Development
 
 ```bash
-git clone https://github.com/your-org/surivoice.git
+git clone https://github.com/MozartSoares/surivoice.git
 cd surivoice
 pip install -e ".[dev,ml]"
 ```
