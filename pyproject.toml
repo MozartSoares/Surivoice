@@ -5,7 +5,7 @@ description = "Local-first CLI for speech transcription with speaker diarization
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
-authors = [{ name = "Surivoice Contributors" }]
+authors = [{ name = "Mozart Soares", email = "mozartarmstrong@gmail.com" }]
 keywords = ["transcription", "diarization", "whisper", "speech-to-text", "cli"]
 classifiers = [
     "Development Status :: 3 - Alpha",

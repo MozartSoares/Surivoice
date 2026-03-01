@@ -20,8 +20,16 @@ Surivoice is an open-source CLI tool that takes a video or audio file, transcrib
 
 ## Installation
 
+Because Surivoice relies on heavy Machine Learning libraries (PyTorch, Faster-Whisper, Pyannote), you must install it with the `[ml]` extra flag to pull these dependencies.
+
+**Recommended (via pipx for isolated environments):**
 ```bash
-pip install surivoice
+pipx install "surivoice[ml]"
+```
+
+**Alternative (via pip in a virtual environment):**
+```bash
+pip install "surivoice[ml]"
 ```
 
 For GPU support, ensure you have CUDA-enabled PyTorch installed.
@@ -69,6 +77,10 @@ surivoice transcribe -i meeting.mp4 -o transcript.md
 
 **Video:** `.mp4`, `.mkv`, `.avi`, `.mov`, `.webm`
 **Audio:** `.mp3`, `.wav`, `.flac`, `.ogg`, `.m4a`, `.aac`, `.wma`
+
+## Credits
+
+Created by [Mozart Soares](https://github.com/MozartSoares).
 
 ## License
 
