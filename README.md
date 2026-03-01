@@ -15,7 +15,11 @@ Surivoice is an open-source CLI tool that takes a video or audio file, transcrib
 ## Requirements
 
 - Python 3.10+
-- [FFmpeg](https://ffmpeg.org/) installed and on `PATH`
+- **OS**: Linux, macOS, or windows (fully supported natively!)
+- **FFmpeg** installed and added to your system `PATH`:
+  - Ubuntu/Debian: `sudo apt install ffmpeg`
+  - macOS: `brew install ffmpeg`
+  - Windows: `winget install ffmpeg`
 - A [Hugging Face](https://huggingface.co/) access token (for pyannote.audio models)
 
 ## Installation

@@ -78,6 +78,7 @@ def transcribe(wav_path: Path, config: PipelineConfig) -> TranscribeResult:
 
     language = config.language
 
+
     logger.info("Transcribing %s", wav_path)
 
     try:
