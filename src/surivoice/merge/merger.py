@@ -5,7 +5,7 @@ transcription segment, then coalesces consecutive segments from the
 same speaker into a single MergedSegment.
 
 Algorithm complexity: O(T + D) where T = transcription segments, D = diarization segments.
-We use a high-performance sweep-line algorithm (since segments are strictly chronological) 
+We use a high-performance sweep-line algorithm (since segments are strictly chronological)
 coupled with a midpoint distance check to cleanly handle edge boundaries.
 """
 

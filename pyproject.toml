@@ -1,6 +1,6 @@
 [project]
 name = "surivoice"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local-first CLI for speech transcription with speaker diarization"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -31,6 +31,7 @@ ml = [
     "faster-whisper>=1.0",
     "pyannote.audio>=3.1",
 ]
+gui = []
 dev = [
     "pytest>=8.0",
     "pytest-cov",
@@ -40,6 +41,7 @@ dev = [
 
 [project.scripts]
 surivoice = "surivoice.cli:app"
+surivoice-gui = "surivoice.gui:main"
 
 [build-system]
 requires = ["hatchling"]

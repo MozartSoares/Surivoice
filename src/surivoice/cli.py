@@ -5,18 +5,21 @@ parsed here, validated, and converted into a PipelineConfig before
 invoking the pipeline orchestrator.
 """
 
-import shutil
 from pathlib import Path
 
 import typer
 from rich.console import Console
 
 from surivoice import __version__
+from surivoice.audio.validators import check_ffmpeg, validate_input_file
 from surivoice.config import ComputeType, DeviceType, PipelineConfig, WhisperModel
-from surivoice.errors import FFmpegError, InputFileError, SurivoiceError
-
-TOKEN_DIR = Path.home() / ".config" / "surivoice"
-TOKEN_FILE = TOKEN_DIR / "token"
+from surivoice.diarization.validators import (
+    resolve_hf_token,
+)
+from surivoice.diarization.validators import (
+    save_token as _save_token_to_disk,
+)
+from surivoice.errors import SurivoiceError
 
 console = Console(stderr=True)
 
@@ -43,25 +46,6 @@ def print_warning(msg: str) -> None:
     console.print(f"[yellow]{msg}[/]")
 
 
-# Supported input extensions (common audio/video formats)
-SUPPORTED_EXTENSIONS: frozenset[str] = frozenset(
-    {
-        ".mp4",
-        ".mkv",
-        ".avi",
-        ".mov",
-        ".webm",  # video
-        ".mp3",
-        ".wav",
-        ".flac",
-        ".ogg",
-        ".m4a",
-        ".aac",
-        ".wma",  # audio
-    }
-)
-
-
 def version_callback(value: bool) -> None:
     """Print version and exit."""
     if value:
@@ -83,63 +67,34 @@ def main(
     """Local-first speech transcription with speaker diarization."""
 
 
-def _validate_input_file(path: Path) -> Path:
-    """Validate that the input file exists and has a supported extension."""
-    if not path.exists():
-        print_error(f"{InputFileError.NOT_FOUND}: {path}")
+def _cli_validate_input_file(path: Path) -> Path:
+    """Validate the input file, exiting on error."""
+    error = validate_input_file(path)
+    if error is not None:
+        print_error(error)
         raise typer.Exit(code=1)
-
-    if not path.is_file():
-        print_error(f"{InputFileError.NOT_A_FILE}: {path}")
-        raise typer.Exit(code=1)
-
-    if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
-        print_error(
-            f"{InputFileError.UNSUPPORTED_FORMAT}: '{path.suffix}'\n"
-            f"Supported formats: {', '.join(sorted(SUPPORTED_EXTENSIONS))}"
-        )
-        raise typer.Exit(code=1)
-
     return path
 
 
-def _check_ffmpeg() -> None:
-    """Check that FFmpeg is available on PATH."""
-    if shutil.which("ffmpeg") is None:
-        print_error(
-            f"{FFmpegError.NOT_INSTALLED}.\n"
-            "Install it with:\n"
-            "  Ubuntu/Debian: sudo apt install ffmpeg\n"
-            "  macOS:         brew install ffmpeg\n"
-            "  Arch:          sudo pacman -S ffmpeg"
-        )
+def _cli_check_ffmpeg() -> None:
+    """Check for FFmpeg, exiting on error."""
+    error = check_ffmpeg()
+    if error is not None:
+        print_error(error)
         raise typer.Exit(code=2)
 
 
-def _load_saved_token() -> str | None:
-    """Read a saved HF token from ~/.config/surivoice/token."""
-    if TOKEN_FILE.is_file():
-        content = TOKEN_FILE.read_text(encoding="utf-8").strip()
-        if content:
-            return content
-    return None
-
-
-def _resolve_hf_token(cli_token: str | None) -> str:
-    """Resolve the HF token from CLI flag, env var, or saved file.
+def _cli_resolve_hf_token(cli_token: str | None) -> str:
+    """Resolve the HF token, exiting if not found.
 
     Resolution order:
         1. --hf-token flag (already includes HF_TOKEN env via Typer)
-        2. Saved token file (~/.config/surivoice/token)
-
-    Raises typer.Exit if no token is found.
+        2. HF_TOKEN environment variable
+        3. Saved token file (~/.config/surivoice/token)
     """
-    if cli_token:
-        return cli_token
-
-    saved = _load_saved_token()
-    if saved:
-        return saved
+    resolved = resolve_hf_token(cli_token)
+    if resolved is not None:
+        return resolved
 
     print_error(
         "Hugging Face token is required for speaker diarization.\n"
@@ -156,10 +111,26 @@ def save_token(
     token: str = typer.Argument(..., help="Hugging Face access token to save."),
 ) -> None:
     """Save your Hugging Face token locally for future runs."""
-    TOKEN_DIR.mkdir(parents=True, exist_ok=True)
-    TOKEN_FILE.write_text(token.strip(), encoding="utf-8")
-    TOKEN_FILE.chmod(0o600)  # read/write for owner only
-    print_success(f"Token saved to {TOKEN_FILE}")
+    saved_path = _save_token_to_disk(token)
+    print_success(f"Token saved to {saved_path}")
+
+
+@app.command()
+def gui() -> None:
+    """Launch the graphical interface for Surivoice."""
+    try:
+        from surivoice.gui import main as launch_gui
+    except ImportError:
+        print_error(
+            "tkinter is not installed.\n"
+            "Install it with:\n"
+            "  Ubuntu/Debian: sudo apt install python3-tk\n"
+            "  Fedora:        sudo dnf install python3-tkinter\n"
+            "  macOS:         brew install python-tk\n"
+            "  Arch:          sudo pacman -S tk"
+        )
+        raise typer.Exit(code=1) from None
+    launch_gui()
 
 
 @app.command()
@@ -216,9 +187,9 @@ def transcribe(
 ) -> None:
     """Transcribe an audio/video file with speaker diarization."""
     # Validate prerequisites (fail-fast)
-    _validate_input_file(input_file)
-    _check_ffmpeg()
-    resolved_token = _resolve_hf_token(hf_token)
+    _cli_validate_input_file(input_file)
+    _cli_check_ffmpeg()
+    resolved_token = _cli_resolve_hf_token(hf_token)
 
     # Build pipeline configuration
     config = PipelineConfig(
